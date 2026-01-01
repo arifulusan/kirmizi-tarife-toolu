@@ -1,0 +1,6 @@
+__pycache__/
+*.xlsx
+*.pyc
+.env
+.DS_Store
+node_modules/

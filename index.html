@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kırmızı Tarife Tool'u | Premium Vodafone Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF0000;
+            --primary-glow: rgba(255, 0, 0, 0.5);
+            --bg: #050505;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text: #FFFFFF;
+            --text-dim: #999999;
+            --accent: #FF4D4D;
+            --success: #00FF88;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Abstract Background */
+        .bg-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 0% 0%, rgba(255, 0, 0, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(255, 0, 0, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 1) 0%, transparent 100%);
+            opacity: 0.8;
+        }
+
+        /* Layout */
+        .app-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            background: rgba(255, 255, 255, 0.01);
+            border-right: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            padding: 2.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0 0.5rem;
+        }
+
+        .logo-circle {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .nav-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            padding-left: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 20px rgba(255, 0, 0, 0.2);
+        }
+
+        .btn-glass {
+            background: var(--glass);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Main Content */
+        main {
+            padding: 3rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .hero {
+            margin-bottom: 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .hero h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* Premium Table Design */
+        .table-container {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            padding: 1.25rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .category-row {
+            background: rgba(255, 0, 0, 0.03) !important;
+        }
+
+        .category-row td {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+        }
+
+        .data-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .price-primary {
+            font-weight: 700;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .price-secondary {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            text-decoration: line-through;
+            margin-left: 0.5rem;
+        }
+
+        .empty-state {
+            padding: 5rem;
+            text-align: center;
+            color: var(--text-dim);
+        }
+
+        /* Loading */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--glass);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            color: black;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s ease;
+            z-index: 3000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-mesh"></div>
+
+    <div id="loadingOverlay">
+        <div class="loader"></div>
+        <div style="text-align: center;">
+            <h3 style="margin-bottom: 0.5rem;">Detaylar Çekiliyor...</h3>
+            <p style="color: var(--text-dim); max-width: 400px;">Taahhütsüz ücret bilgileri için her tarife tek tek
+                inceleniyor. Lütfen bekleyin.</p>
+        </div>
+    </div>
+
+    <div class="app-wrapper">
+        <aside>
+            <div class="logo-box">
+                <div class="logo-circle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M12 2v20M6 12l6 6 6-6" />
+                    </svg>
+                </div>
+                <div class="logo-text">Kırmızı Tarife Tool'u</div>
+            </div>
+            <div class="nav-section">
+                <span class="nav-label">Dashboard</span>
+                <button id="scrapeBtn" class="btn btn-primary" onclick="startScraping()">Tarifeleri Güncelle</button>
+                <button class="btn btn-glass" onclick="downloadExcel()">Excel İndir</button>
+            </div>
+        </aside>
+
+        <main>
+            <div class="hero">
+                <div>
+                    <h2>Tarife Listesi</h2>
+                    <p style="color: var(--text-dim);">Vodafone taahhütlü ve taahhütsüz fiyat karşılaştırması.</p>
+                </div>
+                <div id="lastUpdateBadge" style="font-size: 0.85rem; color: var(--text-dim);">Son Güncelleme: -</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card"><span class="stat-label">Toplam Paket</span>
+                    <div class="stat-value" id="totalTariffs">0</div>
+                </div>
+                <div class="stat-card"><span class="stat-label">En Düşük Taahhütlü</span>
+                    <div class="stat-value" id="minPrice">-</div>
+                </div>
+                <div class="stat-card"><span class="stat-label">En Yüksek GB</span>
+                    <div class="stat-value" id="maxGb">-</div>
+                </div>
+                <div class="stat-card"><span class="stat-label">Toplam Kategori</span>
+                    <div class="stat-value" id="categoryCount">0</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Paket Adı</th>
+                            <th>İnternet</th>
+                            <th>Dakika / SMS</th>
+                            <th>Fiyat (Taahhütlü)</th>
+                            <th>Taahhütsüz Fiyat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contentArea">
+                        <tr>
+                            <td colspan="5" class="empty-state">Henüz veri yok. Güncelle butonuna basın.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        async function startScraping() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            try {
+                const response = await fetch('/api/scrape');
+                const data = await response.json();
+                if (data.success) {
+                    renderUI(data.tariffs, data.timestamp);
+                    showToast('✅ Tüm detaylar güncellendi!');
+                }
+            } catch (e) {
+                showToast('❌ Hata oluştu!');
+            } finally { overlay.style.display = 'none'; }
+        }
+
+        function renderUI(tariffs, timestamp) {
+            updateStats(tariffs, timestamp);
+            const tbody = document.getElementById('contentArea');
+            const grouped = {};
+            tariffs.forEach(t => {
+                const cat = t.category || 'Diğer';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(t);
+            });
+
+            let html = '';
+            for (const [category, categoryTariffs] of Object.entries(grouped)) {
+                html += `<tr class="category-row"><td colspan="5">📂 ${category}</td></tr>`;
+                categoryTariffs.forEach(t => {
+                    html += `
+                        <tr>
+                            <td style="padding-left: 2.5rem; font-weight: 500;">${t.name}</td>
+                            <td><span class="data-badge">🌐 ${t.gb} GB</span></td>
+                            <td style="color: var(--text-dim); font-size: 0.85rem;">📞 ${t.minutes} / ✉️ ${t.sms}</td>
+                            <td><span class="price-primary">${t.price} ₺</span></td>
+                            <td>
+                                ${t.no_commitment_price ?
+                            `<span class="price-secondary">${t.no_commitment_price} ₺</span>` :
+                            '<span style="color: var(--text-dim); opacity: 0.5;">-</span>'}
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            tbody.innerHTML = html;
+        }
+
+        function updateStats(tariffs, timestamp) {
+            document.getElementById('totalTariffs').textContent = tariffs.length;
+            const categories = new Set(tariffs.map(t => t.category));
+            document.getElementById('categoryCount').textContent = categories.size;
+            if (tariffs.length > 0) {
+                const prices = tariffs.map(t => parseInt(t.price) || 0).filter(p => p > 0);
+                const gbs = tariffs.map(t => parseInt(t.gb) || 0).filter(g => g > 0);
+                document.getElementById('minPrice').textContent = Math.min(...prices) + ' ₺';
+                document.getElementById('maxGb').textContent = Math.max(...gbs) + ' GB';
+            }
+            if (timestamp) document.getElementById('lastUpdateBadge').textContent = 'Son Güncelleme: ' + new Date(timestamp).toLocaleString();
+        }
+
+        function downloadExcel() { window.location.href = '/api/download'; }
+        function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+        async function init() {
+            try {
+                const r = await fetch('/api/tariffs');
+                const d = await r.json();
+                if (d.tariffs && d.tariffs.length > 0) renderUI(d.tariffs, d.timestamp);
+            } catch (e) { }
+        }
+        init();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+{
+  "urls": [
+    {
+      "name": "Vodafone",
+      "url": "https://www.vodafone.com.tr/numara-tasima-yeni-hat/tarifeler?homeheader=post-vodafoneluol"
+    }
+  ],
+  "output_file": "tarifeler.xlsx"
+}
