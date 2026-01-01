@@ -404,19 +404,54 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        let isPolling = false;
+
         async function startScraping() {
+            if (isPolling) return;
+
             const overlay = document.getElementById('loadingOverlay');
             overlay.style.display = 'flex';
+
             try {
                 const response = await fetch('/api/scrape');
                 const data = await response.json();
+
                 if (data.success) {
-                    renderUI(data.tariffs, data.timestamp);
-                    showToast('✅ Tüm detaylar güncellendi!');
+                    showToast('🔍 İşlem başlatıldı, veriler çekiliyor...');
+                    startPolling();
                 }
             } catch (e) {
+                overlay.style.display = 'none';
                 showToast('❌ Hata oluştu!');
-            } finally { overlay.style.display = 'none'; }
+            }
+        }
+
+        async function startPolling() {
+            if (isPolling) return;
+            isPolling = true;
+
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/tariffs');
+                    const data = await response.json();
+
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        isPolling = false;
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        renderUI(data.tariffs, data.timestamp);
+                        showToast('✅ Tüm detaylar güncellendi!');
+                    } else if (data.status === 'error') {
+                        clearInterval(pollInterval);
+                        isPolling = false;
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        showToast('❌ ' + (data.message || 'Hata oluştu!'));
+                    }
+                    // Eğer 'running' ise beklemeye devam et
+                } catch (e) {
+                    console.error('Polling error:', e);
+                }
+            }, 3000); // 3 saniyede bir kontrol et
         }
 
         function renderUI(tariffs, timestamp) {
