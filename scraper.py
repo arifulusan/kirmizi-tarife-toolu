@@ -286,77 +286,99 @@ class TarifeScraper:
         
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+            context = await browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+            page = await context.new_page()
             
-            print(f"🌐 Sayfa açılıyor: {url}")
-            await page.goto(url, wait_until="networkidle")
+            print(f"🌐 Liste sayfası açılıyor: {url}")
+            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
             
-            # Popupları kapat
+            # Kartların yüklenmesini bekle
+            try:
+                await page.wait_for_selector('a.molecule-dynamic-card_linkDecoration__cDpXS', timeout=20000)
+            except:
+                print("⚠️ Uyarı: Kartlar beklenen sürede yüklenmedi, yine de devam ediliyor.")
+
+            # Popupları kapatmayı dene
             try:
                 accept_btn = page.locator("text=Kabul Et").first
-                if await accept_btn.is_visible(timeout=5000):
+                if await accept_btn.is_visible(timeout=3000):
                     await accept_btn.click()
-            except:
-                pass
+            except: pass
             
             # Sayfayı scroll yaparak tüm içeriği yükle
-            print("📜 Sayfa scroll ediliyor...")
-            for _ in range(5):
-                await page.mouse.wheel(0, 1000)
-                await page.wait_for_timeout(500)
+            for _ in range(3):
+                await page.mouse.wheel(0, 1500)
+                await page.wait_for_timeout(800)
             
-            # Liste sayfasındaki kart URLe'lerini topla
+            # Linkleri topla
             tariff_links = await page.evaluate("""
-                () => Array.from(document.querySelectorAll('a.molecule-dynamic-card_linkDecoration__cDpXS'))
-                           .map(a => a.href)
+                () => {
+                    const links = Array.from(document.querySelectorAll('a.molecule-dynamic-card_linkDecoration__cDpXS'))
+                                       .map(a => a.href);
+                    return [...new Set(links)]; // Tekrar edenleri temizle
+                }
             """)
             
-            print(f"🔗 {len(tariff_links)} adet tarife detay linki bulundu. Taranıyor...")
+            if not tariff_links:
+                print("❌ Hata: Hiç tarife linki bulunamadı. Seçici değişmiş olabilir.")
+                await browser.close()
+                return []
+
+            print(f"🔗 {len(tariff_links)} adet tarife linki bulundu. Detaylar çekiliyor...")
             
-            for link in tariff_links:
+            detail_page = await context.new_page()
+            
+            for i, link in enumerate(tariff_links, 1):
                 try:
-                    detail_page = await browser.new_page()
-                    await detail_page.goto(link, wait_until="networkidle", timeout=30000)
+                    print(f"📝 ({i}/{len(tariff_links)}) taranıyor: {link}")
+                    await detail_page.goto(link, wait_until="domcontentloaded", timeout=30000)
+                    # Çok hızlı gidince bloklanmamak için kısa bekleme
+                    await detail_page.wait_for_timeout(1000) 
                     
                     data = await detail_page.evaluate("""
                         () => {
                             const name = document.querySelector('h1')?.textContent?.trim() || 
                                          document.querySelector('h2')?.textContent?.trim() || 'Turkcell Tarife';
                             
-                            // Özellikleri topla (GB, DK, SMS)
                             let gb = '', dk = '', sms = '';
-                            const features = Array.from(document.querySelectorAll('h3, div[class*="packageName"]'));
-                            features.forEach(f => {
-                                const txt = f.innerText.toUpperCase();
-                                if (txt.includes('GB')) gb = txt.replace('GB', '').trim();
-                                else if (txt.includes('DK')) dk = txt.replace('DK', '').trim();
-                                else if (txt.includes('SMS')) sms = txt.replace('SMS', '').trim();
+                            // Daha geniş bir seçici grubu
+                            const elements = Array.from(document.querySelectorAll('h1, h2, h3, p, div[class*="packageName"]'));
+                            elements.forEach(el => {
+                                const txt = el.innerText.toUpperCase();
+                                if (/^\\d+\\s*GB$/i.test(txt) || (txt.includes('GB') && txt.length < 15)) {
+                                    gb = txt.replace('GB', '').trim();
+                                } else if (txt.includes('DK') && txt.length < 15) {
+                                    dk = txt.replace('DK', '').trim();
+                                } else if (txt.includes('SMS') && txt.length < 15) {
+                                    sms = txt.replace('SMS', '').trim();
+                                }
                             });
                             
-                            // Fiyatları topla
                             let price = 0;
                             let noCommitmentPrice = 0;
                             
-                            // Seçenekleri tara (Yıllık/Aylık radyo butonları veya kapsayıcıları)
-                            const priceContainers = Array.from(document.querySelectorAll('label, div')).filter(el => 
-                                el.innerText.includes('ABONELİK') && el.innerText.includes('TL')
-                            );
+                            // Fiyatları sayfa metni içinde ara
+                            const bodyText = document.body.innerText;
                             
-                            priceContainers.forEach(container => {
-                                const text = container.innerText.toUpperCase();
-                                const valMatch = container.innerText.match(/(\\d+)\\s*(?=TL)/i);
-                                const val = valMatch ? parseInt(valMatch[1]) : 0;
-                                
-                                if (text.includes('YILLIK')) price = val;
-                                else if (text.includes('AYLIK')) noCommitmentPrice = val;
+                            // Yıllık Taahhütlü Fiyat
+                            const annualMatch = bodyText.match(/Yıllık\\s*Abonelik.*?(\\d+)\\s*TL/is);
+                            if (annualMatch) price = parseInt(annualMatch[1]);
+                            
+                            // Aylık Taahhütsüz Fiyat
+                            const monthlyMatch = bodyText.match(/Aylık\\s*Abonelik.*?(\\d+)\\s*TL/is);
+                            if (monthlyMatch) noCommitmentPrice = parseInt(monthlyMatch[1]);
+                            
+                            // Alternatif: Radyo butonlarından çekmeyi dene (görseldeki yapı)
+                            const priceLabels = Array.from(document.querySelectorAll('label, .ant-radio-wrapper'));
+                            priceLabels.forEach(label => {
+                                const lText = label.innerText.toUpperCase();
+                                const pMatch = label.innerText.match(/(\\d+)\\s*TL/i);
+                                if (pMatch) {
+                                    const val = parseInt(pMatch[1]);
+                                    if (lText.includes('YILLIK')) price = val;
+                                    else if (lText.includes('AYLIK')) noCommitmentPrice = val;
+                                }
                             });
-                            
-                            // Eğer hala bulunamadıysa Ücretlendirme kısmına bak
-                            if (noCommitmentPrice === 0) {
-                                const pricingText = document.body.innerText;
-                                const monthlyMatch = pricingText.match(/Aylık\\s*Abonelik.*?(\\d+)\\s*TL/is);
-                                if (monthlyMatch) noCommitmentPrice = parseInt(monthlyMatch[1]);
-                            }
 
                             return {
                                 name: name,
@@ -369,9 +391,11 @@ class TarifeScraper:
                         }
                     """)
                     
-                    # Kategori belirleme
-                    category = 'Diğer Tarifeler';
-                    lowerName = data['name'].toLowerCase();
+                    if data['price'] == 0 and data['no_commitment_price'] > 0:
+                        data['price'] = data['no_commitment_price'] # Fallback
+
+                    category = 'Diğer Tarifeler'
+                    lowerName = data['name'].toLowerCase()
                     if 'platinum' in lowerName: category = 'Platinum Tarifeleri'
                     elif 'star' in lowerName: category = 'Star Tarifeleri'
                     elif 'esneyen' in lowerName: category = 'Esneyen Tarifeler'
@@ -388,16 +412,15 @@ class TarifeScraper:
                         'provider': 'Turkcell (Mevcut)'
                     })
                     
-                    print(f"✅ Çekildi: {data['name']} ({data['price']} TL / {data['no_commitment_price']} TL)")
-                    await detail_page.close()
-                    
                 except Exception as e:
-                    print(f"❌ Hata ({link}): {str(e)}")
-                    try: await detail_page.close()
-                    except: pass
+                    print(f"⚠️ Hata (Atlanıyor - {link}): {str(e)}")
+                    continue
+            
             await browser.close()
             
-        print(f"✅ {len(tariffs)} Turkcell Mevcut tarifesi bulundu")
+        # Fiyata göre sırala
+        tariffs = sorted(tariffs, key=lambda x: x['price'] if x['price'] > 0 else 9999)
+        print(f"✅ Bitti: {len(tariffs)} Turkcell Mevcut tarifesi çekildi.")
         return tariffs
     
     def save_to_excel(self, tariffs: list[dict], output_path: str):
