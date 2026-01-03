@@ -28,31 +28,34 @@ last_scrape = {
     "message": ""
 }
 
-async def run_scraping_task():
+async def run_scraping_task(provider: str):
     """Background task to run the scraper."""
     global last_scrape
     try:
         last_scrape["status"] = "running"
-        last_scrape["message"] = "Scraper başlatıldı..."
+        last_scrape["message"] = f"{provider} scraper başlatıldı..."
         
         scraper = TarifeScraper()
         tariffs = []
         
-        for site in scraper.config.get('urls', []):
-            url = site.get('url', '')
-            if 'vodafone' in url.lower():
-                tariffs = await scraper.scrape_vodafone(url)
+        url = ""
+        if provider.lower() == "vodafone":
+            url = "https://www.vodafone.com.tr/numara-tasima-yeni-hat/tarifeler?homeheader=post-vodafoneluol"
+            tariffs = await scraper.scrape_vodafone(url)
+        elif provider.lower() == "turkcell":
+            url = "https://www.turkcell.com.tr/trc/turkcellli-olmak/paket-secimi"
+            tariffs = await scraper.scrape_turkcell(url)
         
         # Save to Excel
         if tariffs:
             output_path = scraper.config.get('output_file', 'tarifeler.xlsx')
             scraper.save_to_excel(tariffs, output_path)
         
-        # Update last scrape
+        # Update last scrape (overwrites previous to show current provider)
         last_scrape["tariffs"] = tariffs
         last_scrape["timestamp"] = datetime.now().isoformat()
         last_scrape["status"] = "completed"
-        last_scrape["message"] = f"{len(tariffs)} tarife başarıyla çekildi."
+        last_scrape["message"] = f"{len(tariffs)} {provider} tarifesi başarıyla çekildi."
         
     except Exception as e:
         last_scrape["status"] = "error"
@@ -66,17 +69,17 @@ async def index():
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 @app.get("/api/scrape")
-async def start_scrape(background_tasks: BackgroundTasks):
+async def start_scrape(background_tasks: BackgroundTasks, provider: str = "vodafone"):
     """Start the scraper in the background."""
     global last_scrape
     if last_scrape["status"] == "running":
-        return {"success": True, "message": "Scraper zaten çalışıyor."}
+        return {"success": False, "message": "Scraper zaten çalışıyor."}
     
     last_scrape["status"] = "running"
-    last_scrape["message"] = "İşlem başlatılıyor..."
-    background_tasks.add_task(run_scraping_task)
+    last_scrape["message"] = f"{provider} işlemi başlatılıyor..."
+    background_tasks.add_task(run_scraping_task, provider)
     
-    return {"success": True, "message": "Scraping işlemi başlatıldı."}
+    return {"success": True, "message": f"{provider} scraping işlemi başlatıldı."}
 
 @app.get("/api/tariffs")
 async def get_tariffs():

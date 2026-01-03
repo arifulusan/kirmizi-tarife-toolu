@@ -138,7 +138,8 @@ class TarifeScraper:
                                     minutes: dk,
                                     sms: sms,
                                     price: price,
-                                    no_commitment_price: noCommitmentPrice
+                                    no_commitment_price: noCommitmentPrice,
+                                    provider: 'Vodafone'
                                 });
                             }
                         }
@@ -161,6 +162,103 @@ class TarifeScraper:
             await browser.close()
             
         print(f"✅ {len(tariffs)} tarife bulundu")
+        return tariffs
+
+    async def scrape_turkcell(self, url: str) -> list[dict]:
+        """Scrape tariff data from Turkcell website."""
+        tariffs = []
+        
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            
+            print(f"🌐 Sayfa açılıyor: {url}")
+            await page.goto(url, wait_until="networkidle")
+            
+            # Popupları kapat
+            try:
+                # Cookie kabul
+                accept_btn = page.locator("text=Kabul Et").first
+                if await accept_btn.is_visible(timeout=5000):
+                    await accept_btn.click()
+                
+                # Bildirim uyarısı (Daha Sonra)
+                later_btn = page.locator("#btn-later").first
+                if await later_btn.is_visible(timeout=3000):
+                    await later_btn.click()
+            except:
+                pass
+            
+            # Sayfayı scroll yaparak tüm içeriği yükle
+            print("📜 Sayfa scroll ediliyor...")
+            for _ in range(10):
+                await page.mouse.wheel(0, 1000)
+                await page.wait_for_timeout(500)
+            
+            # Tarife verilerini çek
+            print("📊 Turkcell tarifeleri çekiliyor...")
+            
+            tariff_data = await page.evaluate("""
+                async () => {
+                    const results = [];
+                    // Turkcell kart seçici
+                    const cards = document.querySelectorAll('.molecules-teasy-card_m-teasy-card__Ly4fG');
+                    
+                    for (const card of cards) {
+                        try {
+                            const name = card.querySelector('.molecules-teasy-card_m-teasy-card__title__h0CO1')?.textContent?.trim() || 'Turkcell Tarife';
+                            const gbText = card.querySelector('.molecules-teasy-card_m-teasy-card__text__container__UY7Ei')?.textContent?.trim() || '';
+                            const dkText = card.querySelector('.molecules-teasy-card_m-teasy-card__subtext__3SrTQ')?.textContent?.trim() || '';
+                            const priceText = card.querySelector('.atom-price_a-price__7lMAa span:first-child')?.textContent?.trim() || '';
+                            
+                            // Sayılar temizle
+                            const gb = gbText.match(/(\\d+)/)?.[1] || '';
+                            const price = parseInt(priceText.replace(/\\D/g, '')) || 0;
+                            const dk = dkText.match(/(\\d+)/)?.[1] || '';
+                            
+                            let sms = '';
+                            
+                            // Detay modalını açıp SMS bilgisi almayı dene
+                            const detailBtn = Array.from(card.querySelectorAll('button, a')).find(el => el.textContent.includes('DETAY'));
+                            if (detailBtn) {
+                                detailBtn.click();
+                                await new Promise(r => setTimeout(r, 1200));
+                                
+                                const modal = document.querySelector('.ant-modal-content');
+                                if (modal) {
+                                    const modalText = modal.innerText;
+                                    const smsMatch = modalText.match(/(\\d+)\\s*SMS/i);
+                                    if (smsMatch) sms = smsMatch[1];
+                                    
+                                    // Modalı kapat
+                                    const closeBtn = Array.from(modal.querySelectorAll('button, span, div')).find(el => el.textContent.trim() === 'Vazgeç' || el.classList.contains('ant-modal-close'));
+                                    if (closeBtn) closeBtn.click();
+                                    await new Promise(r => setTimeout(r, 500));
+                                }
+                            }
+                            
+                            results.push({
+                                category: 'Turkcell Faturalı',
+                                name: name,
+                                gb: gb,
+                                minutes: dk,
+                                sms: sms,
+                                price: price,
+                                no_commitment_price: '',
+                                provider: 'Turkcell'
+                            });
+                        } catch (e) {
+                            console.error('Card extraction error:', e);
+                        }
+                    }
+                    return results;
+                }
+            """)
+            
+            tariffs = sorted(tariff_data, key=lambda x: x['price'])
+            await browser.close()
+            
+        print(f"✅ {len(tariffs)} Turkcell tarifesi bulundu")
         return tariffs
     
     def save_to_excel(self, tariffs: list[dict], output_path: str):
@@ -193,6 +291,7 @@ class TarifeScraper:
         # Veri satırları
         today = datetime.now().strftime("%Y-%m-%d %H:%M")
         for row, tariff in enumerate(tariffs, 2):
+            provider = tariff.get('provider', 'Vodafone')
             ws.cell(row=row, column=1, value=tariff.get('category', '')).border = thin_border
             ws.cell(row=row, column=2, value=tariff.get('name', '')).border = thin_border
             ws.cell(row=row, column=3, value=tariff.get('gb', '')).border = thin_border
@@ -200,7 +299,7 @@ class TarifeScraper:
             ws.cell(row=row, column=5, value=tariff.get('sms', '')).border = thin_border
             ws.cell(row=row, column=6, value=tariff.get('price', '')).border = thin_border
             ws.cell(row=row, column=7, value=tariff.get('no_commitment_price', '')).border = thin_border
-            ws.cell(row=row, column=8, value="Vodafone").border = thin_border
+            ws.cell(row=row, column=8, value=provider).border = thin_border
             ws.cell(row=row, column=9, value=today).border = thin_border
         
         # Sütun genişlikleri

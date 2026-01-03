@@ -10,6 +10,8 @@
         :root {
             --primary: #FF0000;
             --primary-glow: rgba(255, 0, 0, 0.5);
+            --blue: #007AFF;
+            --blue-glow: rgba(0, 122, 255, 0.5);
             --bg: #050505;
             --glass: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.1);
@@ -131,6 +133,12 @@
             box-shadow: 0 10px 20px rgba(255, 0, 0, 0.2);
         }
 
+        .btn-blue {
+            background: var(--blue);
+            color: white;
+            box-shadow: 0 10px 20px rgba(0, 122, 255, 0.2);
+        }
+
         .btn-glass {
             background: var(--glass);
             color: var(--text);
@@ -235,12 +243,21 @@
             background: rgba(255, 0, 0, 0.03) !important;
         }
 
+        .category-row.blue {
+            background: rgba(0, 122, 255, 0.03) !important;
+        }
+
         .category-row td {
             font-weight: 700;
             letter-spacing: 0.5px;
             color: var(--primary);
             border-left: 4px solid var(--primary);
             padding: 1rem 1.5rem;
+        }
+
+        .category-row.blue td {
+            color: var(--blue);
+            border-left-color: var(--blue);
         }
 
         .data-badge {
@@ -351,7 +368,10 @@
             </div>
             <div class="nav-section">
                 <span class="nav-label">Dashboard</span>
-                <button id="scrapeBtn" class="btn btn-primary" onclick="startScraping()">Tarifeleri Güncelle</button>
+                <button id="scrapeVodafone" class="btn btn-primary" onclick="startScraping('vodafone')">Kırmızı
+                    (Vodafone)</button>
+                <button id="scrapeTurkcell" class="btn btn-blue" onclick="startScraping('turkcell')">Mavi
+                    (Turkcell)</button>
                 <button class="btn btn-glass" onclick="downloadExcel()">Excel İndir</button>
             </div>
         </aside>
@@ -405,20 +425,26 @@
 
     <script>
         let isPolling = false;
+        let currentProvider = 'vodafone';
 
-        async function startScraping() {
+        async function startScraping(provider) {
             if (isPolling) return;
+            currentProvider = provider;
 
             const overlay = document.getElementById('loadingOverlay');
+            overlay.querySelector('h3').textContent = `${provider === 'vodafone' ? 'Vodafone' : 'Turkcell'} Detayları Çekiliyor...`;
             overlay.style.display = 'flex';
 
             try {
-                const response = await fetch('/api/scrape');
+                const response = await fetch(`/api/scrape?provider=${provider}`);
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('🔍 İşlem başlatıldı, veriler çekiliyor...');
+                    showToast(`🔍 ${provider} işlemi başlatıldı...`);
                     startPolling();
+                } else {
+                    overlay.style.display = 'none';
+                    showToast('⚠️ ' + data.message);
                 }
             } catch (e) {
                 overlay.style.display = 'none';
@@ -466,7 +492,8 @@
 
             let html = '';
             for (const [category, categoryTariffs] of Object.entries(grouped)) {
-                html += `<tr class="category-row"><td colspan="5">📂 ${category}</td></tr>`;
+                const isBlue = category.toLowerCase().includes('turkcell');
+                html += `<tr class="category-row ${isBlue ? 'blue' : ''}"><td colspan="5">📂 ${category}</td></tr>`;
                 categoryTariffs.forEach(t => {
                     html += `
                         <tr>
