@@ -45,6 +45,9 @@ async def run_scraping_task(provider: str):
         elif provider.lower() == "turkcell":
             url = "https://www.turkcell.com.tr/trc/turkcellli-olmak/paket-secimi"
             tariffs = await scraper.scrape_turkcell(url)
+        elif provider.lower() == "turkcell_mevcut":
+            url = "https://www.turkcell.com.tr/paket-ve-tarifeler/4-5-g-hizinda?paymentType=faturali-hat"
+            tariffs = await scraper.scrape_turkcell_mevcut(url)
         
         # Save to Excel
         if tariffs:

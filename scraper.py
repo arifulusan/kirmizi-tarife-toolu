@@ -279,6 +279,90 @@ class TarifeScraper:
             
         print(f"✅ {len(tariffs)} Turkcell tarifesi bulundu")
         return tariffs
+
+    async def scrape_turkcell_mevcut(self, url: str) -> list[dict]:
+        """Scrape Turkcell existing customer tariffs."""
+        tariffs = []
+        
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            
+            print(f"🌐 Sayfa açılıyor: {url}")
+            await page.goto(url, wait_until="networkidle")
+            
+            # Popupları kapat
+            try:
+                accept_btn = page.locator("text=Kabul Et").first
+                if await accept_btn.is_visible(timeout=5000):
+                    await accept_btn.click()
+            except:
+                pass
+            
+            # Sayfayı scroll yaparak tüm içeriği yükle
+            print("📜 Sayfa scroll ediliyor...")
+            for _ in range(5):
+                await page.mouse.wheel(0, 1000)
+                await page.wait_for_timeout(500)
+            
+            print("📊 Turkcell Mevcut Müşteri tarifeleri çekiliyor...")
+            
+            tariff_data = await page.evaluate("""
+                async () => {
+                    const results = [];
+                    // Mevcut müşteri kart seçici
+                    const cards = document.querySelectorAll('a.molecule-dynamic-card_linkDecoration__cDpXS');
+                    
+                    for (const card of cards) {
+                        try {
+                            const name = card.querySelector('.molecule-dynamic-card_cardHeader__kHBe7 p')?.textContent?.trim() || 'Turkcell Tarife';
+                            
+                            // GB, DK, SMS bulucu
+                            const bodyItems = card.querySelectorAll('.molecule-dynamic-card_cardBody__E1eId > div');
+                            let gb = '', dk = '', sms = '';
+                            
+                            bodyItems.forEach(item => {
+                                const text = item.innerText.toUpperCase();
+                                const val = item.querySelector('p:first-child')?.textContent?.trim() || '';
+                                if (text.includes('GB')) gb = val;
+                                else if (text.includes('DK')) dk = val;
+                                else if (text.includes('SMS')) sms = val;
+                            });
+                            
+                            const priceText = card.querySelector('.molecule-dynamic-card_cardFooter__6jR0m p')?.textContent?.trim() || '';
+                            const price = parseInt(priceText.replace(/\\D/g, '')) || 0;
+                            
+                            // Kategori belirleme (İsimden)
+                            let category = 'Diğer Tarifeler';
+                            const lowerName = name.toLowerCase();
+                            if (lowerName.includes('platinum')) category = 'Platinum Tarifeleri';
+                            else if (lowerName.includes('star')) category = 'Star Tarifeleri';
+                            else if (lowerName.includes('esneyen')) category = 'Esneyen Tarifeler';
+                            else if (lowerName.includes('gnç')) category = 'GNÇ Tarifeleri';
+                            
+                            results.push({
+                                category: category,
+                                name: name,
+                                gb: gb.replace('GB', '').trim(),
+                                minutes: dk.replace('DK', '').trim(),
+                                sms: sms.replace('SMS', '').trim(),
+                                price: price,
+                                no_commitment_price: '',
+                                provider: 'Turkcell (Mevcut)'
+                            });
+                        } catch (e) {
+                            console.error('Card error:', e);
+                        }
+                    }
+                    return results;
+                }
+            """)
+            
+            tariffs = sorted(tariff_data, key=lambda x: x['price'])
+            await browser.close()
+            
+        print(f"✅ {len(tariffs)} Turkcell Mevcut tarifesi bulundu")
+        return tariffs
     
     def save_to_excel(self, tariffs: list[dict], output_path: str):
         """Save tariff data to Excel file."""

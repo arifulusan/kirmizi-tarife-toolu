@@ -371,7 +371,9 @@
                 <button id="scrapeVodafone" class="btn btn-primary" onclick="startScraping('vodafone')">Kırmızı
                     (Vodafone)</button>
                 <button id="scrapeTurkcell" class="btn btn-blue" onclick="startScraping('turkcell')">Mavi
-                    (Turkcell)</button>
+                    (Yeni Müşteri)</button>
+                <button id="scrapeTurkcellMevcut" class="btn btn-blue" style="opacity: 0.8;"
+                    onclick="startScraping('turkcell_mevcut')">Mavi (Mevcut)</button>
                 <button class="btn btn-glass" onclick="downloadExcel()">Excel İndir</button>
             </div>
         </aside>
@@ -379,8 +381,9 @@
         <main>
             <div class="hero">
                 <div>
-                    <h2>Tarife Listesi</h2>
-                    <p style="color: var(--text-dim);">Vodafone taahhütlü ve taahhütsüz fiyat karşılaştırması.</p>
+                    <h2 id="pageTitle">Tarife Listesi</h2>
+                    <p id="pageDescription" style="color: var(--text-dim);">Operatör taahhütlü ve taahhütsüz fiyat
+                        karşılaştırması.</p>
                 </div>
                 <div id="lastUpdateBadge" style="font-size: 0.85rem; color: var(--text-dim);">Son Güncelleme: -</div>
             </div>
@@ -389,7 +392,7 @@
                 <div class="stat-card"><span class="stat-label">Toplam Paket</span>
                     <div class="stat-value" id="totalTariffs">0</div>
                 </div>
-                <div class="stat-card"><span class="stat-label">En Düşük Taahhütlü</span>
+                <div class="stat-card"><span class="stat-label" id="minPriceLabel">En Düşük Fiyat</span>
                     <div class="stat-value" id="minPrice">-</div>
                 </div>
                 <div class="stat-card"><span class="stat-label">En Yüksek GB</span>
@@ -400,7 +403,7 @@
                 </div>
             </div>
 
-            <div class="table-container">
+            <div class="table-container" id="tableContainer">
                 <table>
                     <thead>
                         <tr>
@@ -408,12 +411,12 @@
                             <th>İnternet</th>
                             <th>Dakika / SMS</th>
                             <th>Fiyat (Taahhütlü)</th>
-                            <th>Taahhütsüz Fiyat</th>
+                            <th id="optionalHeader">Taahhütsüz Fiyat</th>
                         </tr>
                     </thead>
                     <tbody id="contentArea">
                         <tr>
-                            <td colspan="5" class="empty-state">Henüz veri yok. Güncelle butonuna basın.</td>
+                            <td colspan="5" class="empty-state">Henüz veri yok. Bir operatör seçin.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -432,7 +435,8 @@
             currentProvider = provider;
 
             const overlay = document.getElementById('loadingOverlay');
-            overlay.querySelector('h3').textContent = `${provider === 'vodafone' ? 'Vodafone' : 'Turkcell'} Detayları Çekiliyor...`;
+            let providerName = provider === 'vodafone' ? 'Vodafone' : (provider === 'turkcell' ? 'Turkcell Yeni' : 'Turkcell Mevcut');
+            overlay.querySelector('h3').textContent = `${providerName} Detayları Çekiliyor...`;
             overlay.style.display = 'flex';
 
             try {
