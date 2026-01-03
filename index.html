@@ -103,24 +103,12 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 0.4rem;
             padding: 0 0.5rem;
         }
 
-        .logo-text {
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            color: #1a1a1a;
-            line-height: 1.1;
-        }
-
-        .logo-wave {
-            width: 100px;
-            height: 12px;
-            background: linear-gradient(90deg, var(--magenta), #e991b8);
-            border-radius: 6px;
-            transform: skewX(-5deg);
+        .logo-box img {
+            width: 160px;
+            height: auto;
         }
 
         .nav-section {
@@ -452,8 +440,7 @@
     <div class="app-wrapper">
         <aside>
             <div class="logo-box">
-                <div class="logo-text">Magenta</div>
-                <div class="logo-wave"></div>
+                <img src="/logo.png" alt="Magenta">
             </div>
             <div class="nav-section">
                 <span class="nav-label">Tarifeler</span>

@@ -78,6 +78,14 @@ async def index():
     html_path = Path(__file__).parent / "index.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
+@app.get("/logo.png")
+async def serve_logo():
+    """Serve the logo image."""
+    logo_path = Path(__file__).parent / "logo.png"
+    if not logo_path.exists():
+        raise HTTPException(status_code=404, detail="Logo not found")
+    return FileResponse(path=logo_path, media_type="image/png")
+
 @app.get("/api/scrape")
 async def start_scrape(background_tasks: BackgroundTasks, provider: str = "vodafone"):
     """Start the scraper in the background."""
