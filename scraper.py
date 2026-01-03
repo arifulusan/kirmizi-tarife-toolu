@@ -206,7 +206,26 @@ class TarifeScraper:
                     
                     for (const card of cards) {
                         try {
-                            const name = card.querySelector('.molecules-teasy-card_m-teasy-card__title__h0CO1')?.textContent?.trim() || 'Turkcell Tarife';
+                            const titleEl = card.querySelector('.molecules-teasy-card_m-teasy-card__title__h0CO1');
+                            const name = titleEl?.textContent?.trim() || 'Turkcell Tarife';
+                            const badgeEl = card.querySelector('.molecules-teasy-card_m-teasy-card__badge__nd1eJ');
+                            const badgeText = badgeEl?.textContent?.trim() || '';
+                            
+                            // Kategori belirleme mantığı
+                            let category = 'Diğer Tarifeler';
+                            const lowerName = name.toLowerCase();
+                            const lowerBadge = badgeText.toLowerCase();
+                            
+                            if (lowerBadge.includes('online')) {
+                                category = "Online'a Özel Tarifeler";
+                            } else if (lowerBadge.includes('platinum') || lowerName.includes('platinum')) {
+                                category = "Platinum Tarifeleri";
+                            } else if (lowerBadge.includes('gnç') || lowerName.includes('gnç')) {
+                                category = "GNÇ Tarifeleri";
+                            } else if (badgeText) {
+                                category = badgeText + " Tarifeleri";
+                            }
+                            
                             const gbText = card.querySelector('.molecules-teasy-card_m-teasy-card__text__container__UY7Ei')?.textContent?.trim() || '';
                             const dkText = card.querySelector('.molecules-teasy-card_m-teasy-card__subtext__3SrTQ')?.textContent?.trim() || '';
                             const priceText = card.querySelector('.atom-price_a-price__7lMAa span:first-child')?.textContent?.trim() || '';
@@ -238,7 +257,7 @@ class TarifeScraper:
                             }
                             
                             results.push({
-                                category: 'Turkcell Faturalı',
+                                category: category,
                                 name: name,
                                 gb: gb,
                                 minutes: dk,
