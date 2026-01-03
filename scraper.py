@@ -315,21 +315,20 @@ class TarifeScraper:
                     
                     for (const card of cards) {
                         try {
-                            const name = card.querySelector('.molecule-dynamic-card_cardHeader__kHBe7 p')?.textContent?.trim() || 'Turkcell Tarife';
+                            // Başlık
+                            const name = card.querySelector('p[class*="--header--title"]') ?.textContent?.trim() || 'Turkcell Tarife';
                             
-                            // GB, DK, SMS bulucu
-                            const bodyItems = card.querySelectorAll('.molecule-dynamic-card_cardBody__E1eId > div');
-                            let gb = '', dk = '', sms = '';
+                            // GB Bilgisi (Header kısmında)
+                            const gbVal = card.querySelector('p[class*="--header--value__"]') ?.textContent?.trim() || '';
                             
-                            bodyItems.forEach(item => {
-                                const text = item.innerText.toUpperCase();
-                                const val = item.querySelector('p:first-child')?.textContent?.trim() || '';
-                                if (text.includes('GB')) gb = val;
-                                else if (text.includes('DK')) dk = val;
-                                else if (text.includes('SMS')) sms = val;
-                            });
+                            // DK ve SMS Bilgisi (Benefits kısmında)
+                            // Genelde 2 tane 'text-body-large-bold-n' sınıfına sahip p elementi var: biri DK biri SMS
+                            const benefits = Array.from(card.querySelectorAll('p.text-body-large-bold-n'));
+                            const dk = benefits[0] ?.textContent?.trim() || '';
+                            const sms = benefits[1] ?.textContent?.trim() || '';
                             
-                            const priceText = card.querySelector('.molecule-dynamic-card_cardFooter__6jR0m p')?.textContent?.trim() || '';
+                            // Fiyat
+                            const priceText = card.querySelector('p[class*="--footer--price--priceInfoText"]') ?.textContent?.trim() || '';
                             const price = parseInt(priceText.replace(/\\D/g, '')) || 0;
                             
                             // Kategori belirleme (İsimden)
@@ -343,9 +342,9 @@ class TarifeScraper:
                             results.push({
                                 category: category,
                                 name: name,
-                                gb: gb.replace('GB', '').trim(),
-                                minutes: dk.replace('DK', '').trim(),
-                                sms: sms.replace('SMS', '').trim(),
+                                gb: gbVal,
+                                minutes: dk,
+                                sms: sms,
                                 price: price,
                                 no_commitment_price: '',
                                 provider: 'Turkcell (Mevcut)'
