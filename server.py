@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 """
-Tarife Scraper Web Server
-FastAPI backend for the Vodafone tariff scraper with web interface.
+Magenta Tarife Scraper
+FastAPI backend for cross-operator tariff comparison.
 """
 
 import asyncio
@@ -18,7 +17,7 @@ from pydantic import BaseModel
 # Import scraper
 from scraper import TarifeScraper
 
-app = FastAPI(title="Kırmızı Tarife Tool'u", version="1.0.0")
+app = FastAPI(title="Magenta", version="1.0.0")
 
 # Store last scrape results in memory
 all_provider_data = {
