@@ -305,59 +305,96 @@ class TarifeScraper:
                 await page.mouse.wheel(0, 1000)
                 await page.wait_for_timeout(500)
             
-            print("📊 Turkcell Mevcut Müşteri tarifeleri çekiliyor...")
+            # Liste sayfasındaki kart URLe'lerini topla
+            tariff_links = await page.evaluate("""
+                () => Array.from(document.querySelectorAll('a.molecule-dynamic-card_linkDecoration__cDpXS'))
+                           .map(a => a.href)
+            """)
             
-            tariff_data = await page.evaluate("""
-                async () => {
-                    const results = [];
-                    // Mevcut müşteri kart seçici
-                    const cards = document.querySelectorAll('a.molecule-dynamic-card_linkDecoration__cDpXS');
+            print(f"🔗 {len(tariff_links)} adet tarife detay linki bulundu. Taranıyor...")
+            
+            for link in tariff_links:
+                try:
+                    detail_page = await browser.new_page()
+                    await detail_page.goto(link, wait_until="networkidle", timeout=30000)
                     
-                    for (const card of cards) {
-                        try {
-                            // Başlık
-                            const name = card.querySelector('p[class*="--header--title"]') ?.textContent?.trim() || 'Turkcell Tarife';
+                    data = await detail_page.evaluate("""
+                        () => {
+                            const name = document.querySelector('h1')?.textContent?.trim() || 
+                                         document.querySelector('h2')?.textContent?.trim() || 'Turkcell Tarife';
                             
-                            // GB Bilgisi (Header kısmında)
-                            const gbVal = card.querySelector('p[class*="--header--value__"]') ?.textContent?.trim() || '';
+                            // Özellikleri topla (GB, DK, SMS)
+                            let gb = '', dk = '', sms = '';
+                            const features = Array.from(document.querySelectorAll('h3, div[class*="packageName"]'));
+                            features.forEach(f => {
+                                const txt = f.innerText.toUpperCase();
+                                if (txt.includes('GB')) gb = txt.replace('GB', '').trim();
+                                else if (txt.includes('DK')) dk = txt.replace('DK', '').trim();
+                                else if (txt.includes('SMS')) sms = txt.replace('SMS', '').trim();
+                            });
                             
-                            // DK ve SMS Bilgisi (Benefits kısmında)
-                            // Genelde 2 tane 'text-body-large-bold-n' sınıfına sahip p elementi var: biri DK biri SMS
-                            const benefits = Array.from(card.querySelectorAll('p.text-body-large-bold-n'));
-                            const dk = benefits[0] ?.textContent?.trim() || '';
-                            const sms = benefits[1] ?.textContent?.trim() || '';
+                            // Fiyatları topla
+                            let price = 0;
+                            let noCommitmentPrice = 0;
                             
-                            // Fiyat
-                            const priceText = card.querySelector('p[class*="--footer--price--priceInfoText"]') ?.textContent?.trim() || '';
-                            const price = parseInt(priceText.replace(/\\D/g, '')) || 0;
+                            // Seçenekleri tara (Yıllık/Aylık radyo butonları veya kapsayıcıları)
+                            const priceContainers = Array.from(document.querySelectorAll('label, div')).filter(el => 
+                                el.innerText.includes('ABONELİK') && el.innerText.includes('TL')
+                            );
                             
-                            // Kategori belirleme (İsimden)
-                            let category = 'Diğer Tarifeler';
-                            const lowerName = name.toLowerCase();
-                            if (lowerName.includes('platinum')) category = 'Platinum Tarifeleri';
-                            else if (lowerName.includes('star')) category = 'Star Tarifeleri';
-                            else if (lowerName.includes('esneyen')) category = 'Esneyen Tarifeler';
-                            else if (lowerName.includes('gnç')) category = 'GNÇ Tarifeleri';
+                            priceContainers.forEach(container => {
+                                const text = container.innerText.toUpperCase();
+                                const valMatch = container.innerText.match(/(\\d+)\\s*(?=TL)/i);
+                                const val = valMatch ? parseInt(valMatch[1]) : 0;
+                                
+                                if (text.includes('YILLIK')) price = val;
+                                else if (text.includes('AYLIK')) noCommitmentPrice = val;
+                            });
                             
-                            results.push({
-                                category: category,
+                            // Eğer hala bulunamadıysa Ücretlendirme kısmına bak
+                            if (noCommitmentPrice === 0) {
+                                const pricingText = document.body.innerText;
+                                const monthlyMatch = pricingText.match(/Aylık\\s*Abonelik.*?(\\d+)\\s*TL/is);
+                                if (monthlyMatch) noCommitmentPrice = parseInt(monthlyMatch[1]);
+                            }
+
+                            return {
                                 name: name,
-                                gb: gbVal,
+                                gb: gb,
                                 minutes: dk,
                                 sms: sms,
                                 price: price,
-                                no_commitment_price: '',
-                                provider: 'Turkcell (Mevcut)'
-                            });
-                        } catch (e) {
-                            console.error('Card error:', e);
+                                no_commitment_price: noCommitmentPrice
+                            };
                         }
-                    }
-                    return results;
-                }
-            """)
-            
-            tariffs = sorted(tariff_data, key=lambda x: x['price'])
+                    """)
+                    
+                    # Kategori belirleme
+                    category = 'Diğer Tarifeler';
+                    lowerName = data['name'].toLowerCase();
+                    if 'platinum' in lowerName: category = 'Platinum Tarifeleri'
+                    elif 'star' in lowerName: category = 'Star Tarifeleri'
+                    elif 'esneyen' in lowerName: category = 'Esneyen Tarifeler'
+                    elif 'gnç' in lowerName: category = 'GNÇ Tarifeleri'
+                    
+                    tariffs.append({
+                        'category': category,
+                        'name': data['name'],
+                        'gb': data['gb'],
+                        'minutes': data['minutes'],
+                        'sms': data['sms'],
+                        'price': data['price'],
+                        'no_commitment_price': data['no_commitment_price'],
+                        'provider': 'Turkcell (Mevcut)'
+                    })
+                    
+                    print(f"✅ Çekildi: {data['name']} ({data['price']} TL / {data['no_commitment_price']} TL)")
+                    await detail_page.close()
+                    
+                except Exception as e:
+                    print(f"❌ Hata ({link}): {str(e)}")
+                    try: await detail_page.close()
+                    except: pass
             await browser.close()
             
         print(f"✅ {len(tariffs)} Turkcell Mevcut tarifesi bulundu")
