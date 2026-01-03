@@ -19,6 +19,8 @@
             --text-dim: #999999;
             --accent: #FF4D4D;
             --success: #00FF88;
+            --magenta: #e20074;
+            --magenta-glow: rgba(226, 0, 116, 0.5);
         }
 
         * {
@@ -337,9 +339,122 @@
             z-index: 3000;
         }
 
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
+        .price-primary {
+            color: var(--text);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .price-secondary {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        /* Magenta Comparison Styles */
+        .magenta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .magenta-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: 0.3s;
+        }
+
+        .magenta-card:hover {
+            border-color: var(--magenta);
+            box-shadow: 0 0 30px rgba(226, 0, 116, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .magenta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 1rem;
+        }
+
+        .magenta-gb {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--magenta);
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .compare-box {
+            padding: 1.25rem;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .compare-box.best {
+            border: 1px solid var(--success);
+            background: rgba(0, 255, 136, 0.03);
+        }
+
+        .provider-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .p-vodafone {
+            color: var(--primary);
+        }
+
+        .p-turkcell {
+            color: var(--blue);
+        }
+
+        .comparison-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .insight-badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-vodafone {
+            background: var(--primary);
+            color: white;
+        }
+
+        .badge-turkcell {
+            background: var(--blue);
+            color: white;
+        }
+
+        .badge-best {
+            background: var(--success);
+            color: #000;
         }
     </style>
 </head>
@@ -374,6 +489,9 @@
                     (Yeni Müşteri)</button>
                 <button id="scrapeTurkcellMevcut" class="btn btn-blue" style="opacity: 0.8;"
                     onclick="startScraping('turkcell_mevcut')">Mavi (Mevcut)</button>
+                <button class="btn"
+                    style="background: var(--magenta); box-shadow: 0 0 15px var(--magenta-glow); width: 100%; color: white; margin: 1rem 0;"
+                    onclick="viewMagenta()">Magenta (Karşılaştır)</button>
                 <button class="btn btn-glass" onclick="downloadExcel()">Excel İndir</button>
             </div>
         </aside>
@@ -421,6 +539,10 @@
                     </tbody>
                 </table>
             </div>
+
+            <div id="magentaContainer" class="magenta-grid" style="display: none;">
+                <!-- Comparison cards will be injected here -->
+            </div>
         </main>
     </div>
 
@@ -429,10 +551,15 @@
     <script>
         let isPolling = false;
         let currentProvider = 'vodafone';
+        let allData = { vodafone: [], turkcell: [], turkcell_mevcut: [] };
 
         async function startScraping(provider) {
             if (isPolling) return;
             currentProvider = provider;
+
+            // Reset view to table
+            document.getElementById('magentaContainer').style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'block';
 
             const overlay = document.getElementById('loadingOverlay');
             let providerName = provider === 'vodafone' ? 'Vodafone' : (provider === 'turkcell' ? 'Turkcell Yeni' : 'Turkcell Mevcut');
@@ -465,23 +592,110 @@
                     const response = await fetch('/api/tariffs');
                     const data = await response.json();
 
+                    if (data.providers) {
+                        allData = data.providers;
+                    }
+
                     if (data.status === 'completed') {
                         clearInterval(pollInterval);
                         isPolling = false;
                         document.getElementById('loadingOverlay').style.display = 'none';
-                        renderUI(data.tariffs, data.timestamp);
-                        showToast('✅ Tüm detaylar güncellendi!');
+
+                        if (currentProvider === 'magenta') {
+                            renderMagenta();
+                        } else {
+                            renderUI(allData[currentProvider], data.timestamp);
+                        }
+                        showToast('✅ Veriler güncellendi!');
                     } else if (data.status === 'error') {
                         clearInterval(pollInterval);
                         isPolling = false;
                         document.getElementById('loadingOverlay').style.display = 'none';
                         showToast('❌ ' + (data.message || 'Hata oluştu!'));
                     }
-                    // Eğer 'running' ise beklemeye devam et
                 } catch (e) {
                     console.error('Polling error:', e);
                 }
-            }, 3000); // 3 saniyede bir kontrol et
+            }, 3000);
+        }
+
+        function viewMagenta() {
+            currentProvider = 'magenta';
+            document.getElementById('pageTitle').textContent = 'Magenta Karşılaştırma';
+            document.getElementById('pageDescription').textContent = 'Vodafone ve Turkcell paketlerinin GB seviyelerine göre yan yana karşılaştırması.';
+
+            document.getElementById('tableContainer').style.display = 'none';
+            document.getElementById('magentaContainer').style.display = 'grid';
+
+            renderMagenta();
+        }
+
+        function renderMagenta() {
+            const container = document.getElementById('magentaContainer');
+            container.innerHTML = '';
+
+            const vData = allData.vodafone || [];
+            const tData = allData.turkcell || [];
+
+            if (vData.length === 0 && tData.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">Karşılaştırmak için önce her iki operatörü de güncelleyin.</div>';
+                return;
+            }
+
+            const gbLevels = [...new Set([...vData.map(d => parseInt(d.gb)), ...tData.map(d => parseInt(d.gb))])].sort((a, b) => a - b);
+
+            gbLevels.forEach(gb => {
+                if (!gb) return;
+                const vBest = vData.filter(d => parseInt(d.gb) === gb).sort((a, b) => a.price - b.price)[0];
+                const tBest = tData.filter(d => parseInt(d.gb) === gb).sort((a, b) => a.price - b.price)[0];
+
+                if (!vBest && !tBest) return;
+
+                const card = document.createElement('div');
+                card.className = 'magenta-card';
+
+                let vodafoneHtml = vBest ? `
+                    <div class="compare-box ${tBest && vBest.price < tBest.price ? 'best' : ''}">
+                        ${tBest && vBest.price < tBest.price ? '<span class="insight-badge badge-best">En İyi Fiyat</span>' : ''}
+                        <span class="provider-label p-vodafone">Vodafone</span>
+                        <span class="comparison-price">${vBest.price} ₺</span>
+                        <span style="font-size: 0.8rem; opacity: 0.7;">${vBest.name}</span>
+                    </div>
+                ` : '<div class="compare-box" style="opacity: 0.3;">Bu kategoride paket yok</div>';
+
+                let turkcellHtml = tBest ? `
+                    <div class="compare-box ${vBest && tBest.price < vBest.price ? 'best' : ''}">
+                        ${vBest && tBest.price < vBest.price ? '<span class="insight-badge badge-best">En İyi Fiyat</span>' : ''}
+                        <span class="provider-label p-turkcell">Turkcell</span>
+                        <span class="comparison-price">${tBest.price} ₺</span>
+                        <span style="font-size: 0.8rem; opacity: 0.7;">${tBest.name}</span>
+                    </div>
+                ` : '<div class="compare-box" style="opacity: 0.3;">Bu kategoride paket yok</div>';
+
+                let insight = '';
+                if (vBest && tBest) {
+                    const diff = Math.abs(vBest.price - tBest.price);
+                    const winner = vBest.price < tBest.price ? 'Vodafone' : 'Turkcell';
+                    if (diff > 0) {
+                        insight = `<div style="margin-top: 1rem; font-size: 0.85rem; color: var(--success); font-weight: 500;">✨ ${winner} bu seviyede ${diff} ₺ daha ucuz</div>`;
+                    } else {
+                        insight = `<div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-dim);">🤝 Fiyatlar bu seviyede eşit.</div>`;
+                    }
+                }
+
+                card.innerHTML = `
+                    <div class="magenta-header">
+                        <span class="magenta-gb">${gb} GB</span>
+                        <span style="font-size: 0.85rem; opacity: 0.5;">İnternet Seviyesi</span>
+                    </div>
+                    <div class="comparison-row">
+                        ${vodafoneHtml}
+                        ${turkcellHtml}
+                    </div>
+                    ${insight}
+                `;
+                container.appendChild(card);
+            });
         }
 
         function renderUI(tariffs, timestamp) {
@@ -536,7 +750,11 @@
             try {
                 const r = await fetch('/api/tariffs');
                 const d = await r.json();
-                if (d.tariffs && d.tariffs.length > 0) renderUI(d.tariffs, d.timestamp);
+                if (d.providers) {
+                    allData = d.providers;
+                    const lastProv = d.current_provider || 'vodafone';
+                    renderUI(allData[lastProv], d.timestamp);
+                }
             } catch (e) { }
         }
         init();

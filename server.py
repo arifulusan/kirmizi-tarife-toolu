@@ -21,41 +21,49 @@ from scraper import TarifeScraper
 app = FastAPI(title="Kırmızı Tarife Tool'u", version="1.0.0")
 
 # Store last scrape results in memory
+all_provider_data = {
+    "vodafone": [],
+    "turkcell": [],
+    "turkcell_mevcut": []
+}
 last_scrape = {
-    "tariffs": [],
     "timestamp": None,
     "status": "idle",
-    "message": ""
+    "message": "",
+    "current_provider": None
 }
 
 async def run_scraping_task(provider: str):
     """Background task to run the scraper."""
-    global last_scrape
+    global last_scrape, all_provider_data
     try:
         last_scrape["status"] = "running"
         last_scrape["message"] = f"{provider} scraper başlatıldı..."
+        last_scrape["current_provider"] = provider
         
         scraper = TarifeScraper()
         tariffs = []
         
         url = ""
-        if provider.lower() == "vodafone":
+        provider_key = provider.lower()
+        if provider_key == "vodafone":
             url = "https://www.vodafone.com.tr/numara-tasima-yeni-hat/tarifeler?homeheader=post-vodafoneluol"
             tariffs = await scraper.scrape_vodafone(url)
-        elif provider.lower() == "turkcell":
+        elif provider_key == "turkcell":
             url = "https://www.turkcell.com.tr/trc/turkcellli-olmak/paket-secimi"
             tariffs = await scraper.scrape_turkcell(url)
-        elif provider.lower() == "turkcell_mevcut":
+        elif provider_key == "turkcell_mevcut":
             url = "https://www.turkcell.com.tr/paket-ve-tarifeler/4-5-g-hizinda?paymentType=faturali-hat"
             tariffs = await scraper.scrape_turkcell_mevcut(url)
         
         # Save to Excel
         if tariffs:
+            all_provider_data[provider_key] = tariffs
             output_path = scraper.config.get('output_file', 'tarifeler.xlsx')
+            # Consolidate all for excel? For now just the current one as before.
+            # Actually, let's just save current.
             scraper.save_to_excel(tariffs, output_path)
         
-        # Update last scrape (overwrites previous to show current provider)
-        last_scrape["tariffs"] = tariffs
         last_scrape["timestamp"] = datetime.now().isoformat()
         last_scrape["status"] = "completed"
         last_scrape["message"] = f"{len(tariffs)} {provider} tarifesi başarıyla çekildi."
@@ -88,10 +96,11 @@ async def start_scrape(background_tasks: BackgroundTasks, provider: str = "vodaf
 async def get_tariffs():
     """Get the last scraped tariffs and current status."""
     return {
-        "tariffs": last_scrape["tariffs"],
+        "providers": all_provider_data,
         "timestamp": last_scrape["timestamp"],
         "status": last_scrape["status"],
-        "message": last_scrape["message"]
+        "message": last_scrape["message"],
+        "current_provider": last_scrape["current_provider"]
     }
 
 
