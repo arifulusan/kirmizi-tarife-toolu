@@ -43,7 +43,7 @@
             position: relative;
         }
 
-        /* Subtle Pastel Background with Floating Blobs */
+        /* Liquid Glass Background with Dynamic Blobs */
         .bg-mesh {
             position: fixed;
             top: 0;
@@ -51,32 +51,59 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            background-color: var(--bg);
+            background-color: #ffffff;
             overflow: hidden;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(194, 24, 91, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(91, 143, 185, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(194, 24, 91, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(91, 143, 185, 0.05) 0px, transparent 50%);
+        }
+
+        .bg-mesh::before,
+        .bg-mesh::after,
+        .blob-3,
+        .blob-4 {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            z-index: -1;
         }
 
         .bg-mesh::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            right: -10%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(212, 70, 139, 0.08) 0%, transparent 70%);
-            border-radius: 50%;
-            filter: blur(60px);
+            width: 600px;
+            height: 600px;
+            background: rgba(194, 24, 91, 0.12);
+            top: -100px;
+            right: -100px;
         }
 
         .bg-mesh::after {
-            content: '';
-            position: absolute;
-            bottom: -15%;
-            left: -5%;
+            width: 500px;
+            height: 500px;
+            background: rgba(74, 127, 168, 0.1);
+            bottom: -100px;
+            left: -100px;
+        }
+
+        .blob-3 {
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, rgba(91, 143, 185, 0.06) 0%, transparent 70%);
-            border-radius: 50%;
-            filter: blur(50px);
+            background: rgba(255, 193, 7, 0.08);
+            top: 30%;
+            left: 20%;
+            position: fixed;
+        }
+
+        .blob-4 {
+            width: 450px;
+            height: 450px;
+            background: rgba(0, 188, 212, 0.08);
+            bottom: 20%;
+            right: 15%;
+            position: fixed;
         }
 
         /* Layout */
@@ -88,18 +115,18 @@
 
         /* Liquid Glass Sidebar */
         aside {
-            background: var(--glass);
-            border-right: 1px solid var(--glass-border);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            padding: 2.5rem 1.5rem;
+            background: rgba(255, 255, 255, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(40px) saturate(200%);
+            -webkit-backdrop-filter: blur(40px) saturate(200%);
+            padding: 3rem 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 2.5rem;
+            gap: 3rem;
             position: sticky;
             top: 0;
             height: 100vh;
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 4px 0 24px rgba(194, 24, 91, 0.04);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.02);
         }
 
         .logo-box {
@@ -215,19 +242,20 @@
         }
 
         .stat-card {
-            background: var(--glass-strong);
-            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             padding: 1.5rem;
-            border-radius: 20px;
-            backdrop-filter: blur(16px) saturate(150%);
-            -webkit-backdrop-filter: blur(16px) saturate(150%);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), var(--glass-shadow);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 24px;
+            backdrop-filter: blur(32px) saturate(160%);
+            -webkit-backdrop-filter: blur(32px) saturate(160%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), 0 12px 40px rgba(194, 24, 91, 0.1);
+            background: rgba(255, 255, 255, 0.55);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 12px 48px rgba(194, 24, 91, 0.1);
         }
 
         .stat-label {
@@ -244,13 +272,13 @@
 
         /* Liquid Glass Table */
         .table-container {
-            background: var(--glass-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 32px;
             overflow: hidden;
-            backdrop-filter: blur(16px) saturate(150%);
-            -webkit-backdrop-filter: blur(16px) saturate(150%);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), var(--glass-shadow);
+            backdrop-filter: blur(32px) saturate(160%);
+            -webkit-backdrop-filter: blur(32px) saturate(160%);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.04);
         }
 
         table {
@@ -414,19 +442,20 @@
         }
 
         .magenta-card {
-            background: var(--glass-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 1.75rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(16px) saturate(150%);
-            -webkit-backdrop-filter: blur(16px) saturate(150%);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), var(--glass-shadow);
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 32px;
+            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(32px) saturate(160%);
+            -webkit-backdrop-filter: blur(32px) saturate(160%);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.04);
         }
 
         .magenta-card:hover {
-            transform: translateY(-6px);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 16px 48px rgba(194, 24, 91, 0.12);
+            background: rgba(255, 255, 255, 0.55);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 64px rgba(194, 24, 91, 0.12);
         }
 
         .magenta-header {
@@ -441,7 +470,10 @@
 </head>
 
 <body>
-    <div class="bg-mesh"></div>
+    <div class="bg-mesh">
+        <div class="blob-3"></div>
+        <div class="blob-4"></div>
+    </div>
 
     <div id="loadingOverlay">
         <div class="loader"></div>
