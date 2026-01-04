@@ -105,7 +105,7 @@
         .logo-box {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
             padding: 0 0.5rem;
         }
 
@@ -459,10 +459,8 @@
             </div>
             <div class="nav-section">
                 <span class="nav-label">Tarifeler</span>
-                <button id="scrapeVodafone" class="btn btn-primary" onclick="startScraping('vodafone')">Kırmızı
-                    (Vodafone)</button>
-                <button id="scrapeTurkcell" class="btn btn-blue" onclick="startScraping('turkcell')">Mavi
-                    (Turkcell)</button>
+                <button id="scrapeVodafone" class="btn btn-primary" onclick="startScraping('vodafone')">Kırmızı</button>
+                <button id="scrapeTurkcell" class="btn btn-blue" onclick="startScraping('turkcell')">Mavi</button>
 
                 <div
                     style="margin-top: 1rem; border-top: 1px solid var(--glass-border); padding-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
@@ -545,7 +543,7 @@
             document.getElementById('tableContainer').style.display = 'block';
 
             const overlay = document.getElementById('loadingOverlay');
-            let providerName = provider === 'vodafone' ? 'Vodafone' : 'Turkcell';
+            let providerName = provider === 'vodafone' ? 'Kırmızı' : 'Mavi';
             overlay.querySelector('h3').textContent = `${providerName} Detayları Çekiliyor...`;
             overlay.style.display = 'flex';
 
@@ -605,7 +603,7 @@
         function viewMagenta() {
             currentProvider = 'magenta';
             document.getElementById('pageTitle').textContent = 'Magenta Karşılaştırma';
-            document.getElementById('pageDescription').textContent = 'Vodafone ve Turkcell paketlerinin GB seviyelerine göre yan yana karşılaştırması.';
+            document.getElementById('pageDescription').textContent = 'Kırmızı ve Mavi paketlerinin GB seviyelerine göre yan yana karşılaştırması.';
 
             document.getElementById('tableContainer').style.display = 'none';
             document.getElementById('magentaContainer').style.display = 'grid';
@@ -640,7 +638,7 @@
                 let vodafoneHtml = vBest ? `
                     <div class="compare-box ${tBest && vBest.price < tBest.price ? 'best' : ''}">
                         ${tBest && vBest.price < tBest.price ? '<span class="insight-badge badge-best">En İyi Fiyat</span>' : ''}
-                        <span class="provider-label p-vodafone">Vodafone</span>
+                        <span class="provider-label p-vodafone">Kırmızı</span>
                         <span class="comparison-price">${vBest.price} ₺</span>
                         <span style="font-size: 0.8rem; opacity: 0.7;">${vBest.name}</span>
                     </div>
@@ -649,7 +647,7 @@
                 let turkcellHtml = tBest ? `
                     <div class="compare-box ${vBest && tBest.price < vBest.price ? 'best' : ''}">
                         ${vBest && tBest.price < vBest.price ? '<span class="insight-badge badge-best">En İyi Fiyat</span>' : ''}
-                        <span class="provider-label p-turkcell">Turkcell</span>
+                        <span class="provider-label p-turkcell">Mavi</span>
                         <span class="comparison-price">${tBest.price} ₺</span>
                         <span style="font-size: 0.8rem; opacity: 0.7;">${tBest.name}</span>
                     </div>
@@ -658,7 +656,7 @@
                 let insight = '';
                 if (vBest && tBest) {
                     const diff = Math.abs(vBest.price - tBest.price);
-                    const winner = vBest.price < tBest.price ? 'Vodafone' : 'Turkcell';
+                    const winner = vBest.price < tBest.price ? 'Kırmızı' : 'Mavi';
                     if (diff > 0) {
                         insight = `<div style="margin-top: 1rem; font-size: 0.85rem; color: var(--success); font-weight: 500;">✨ ${winner} bu seviyede ${diff} ₺ daha ucuz</div>`;
                     } else {
