@@ -9,21 +9,22 @@
         rel="stylesheet">
     <style>
         :root {
-            /* Softer, muted color palette */
-            --primary: #c94c4c;
-            --primary-soft: #f8e8e8;
-            --blue: #5b8fb9;
-            --blue-soft: #e8f1f8;
-            --magenta: #d4468b;
-            --magenta-pastel: #fef5f9;
-            --magenta-soft: #fbe9f1;
-            --bg: #fafafa;
-            --text: #2d2d2d;
-            --text-dim: #888888;
-            --glass: rgba(255, 255, 255, 0.92);
-            --glass-border: rgba(212, 70, 139, 0.08);
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
-            --success: #5bb98b;
+            /* Liquid Glass Color Palette */
+            --primary: #b84a4a;
+            --primary-soft: rgba(184, 74, 74, 0.08);
+            --blue: #4a7fa8;
+            --blue-soft: rgba(74, 127, 168, 0.08);
+            --magenta: #c2185b;
+            --magenta-pastel: rgba(194, 24, 91, 0.04);
+            --magenta-soft: rgba(194, 24, 91, 0.1);
+            --bg: linear-gradient(135deg, #fefefe 0%, #f8f5f7 50%, #f5f0f3 100%);
+            --text: #1a1a1a;
+            --text-dim: #6b6b6b;
+            --glass: rgba(255, 255, 255, 0.6);
+            --glass-strong: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px rgba(194, 24, 91, 0.08);
+            --success: #43a47a;
         }
 
         * {
@@ -39,6 +40,7 @@
             color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
+            position: relative;
         }
 
         /* Subtle Pastel Background with Floating Blobs */
@@ -84,11 +86,12 @@
             min-height: 100vh;
         }
 
-        /* Sidebar Rebranding */
+        /* Liquid Glass Sidebar */
         aside {
             background: var(--glass);
             border-right: 1px solid var(--glass-border);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
             padding: 2.5rem 1.5rem;
             display: flex;
             flex-direction: column;
@@ -96,7 +99,7 @@
             position: sticky;
             top: 0;
             height: 100vh;
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.02);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 4px 0 24px rgba(194, 24, 91, 0.04);
         }
 
         .logo-box {
@@ -212,11 +215,19 @@
         }
 
         .stat-card {
-            background: white;
-            border: 1px solid rgba(0, 0, 0, 0.04);
+            background: var(--glass-strong);
+            border: 1px solid var(--glass-border);
             padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: var(--shadow);
+            border-radius: 20px;
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), var(--glass-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), 0 12px 40px rgba(194, 24, 91, 0.1);
         }
 
         .stat-label {
@@ -231,13 +242,15 @@
             font-weight: 700;
         }
 
-        /* Modern Table Design */
+        /* Liquid Glass Table */
         .table-container {
-            background: white;
-            border: 1px solid rgba(0, 0, 0, 0.04);
-            border-radius: 20px;
+            background: var(--glass-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), var(--glass-shadow);
         }
 
         table {
@@ -401,17 +414,19 @@
         }
 
         .magenta-card {
-            background: white;
-            border: 1px solid rgba(0, 0, 0, 0.04);
-            border-radius: 20px;
+            background: var(--glass-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
             padding: 1.75rem;
             transition: all 0.3s ease;
-            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), var(--glass-shadow);
         }
 
         .magenta-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(212, 70, 139, 0.1);
+            transform: translateY(-6px);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 16px 48px rgba(194, 24, 91, 0.12);
         }
 
         .magenta-header {
